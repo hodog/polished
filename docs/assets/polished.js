@@ -4,265 +4,6 @@
   (factory((global.polished = global.polished || {})));
 }(this, (function (exports) { 'use strict';
 
-//      
-var positionMap = ['top', 'right', 'bottom', 'left'];
-
-function generateProperty(property, position) {
-  if (!property) return position;
-  var splitPropertyName = property.split('-');
-  splitPropertyName.splice(1, 0, position);
-  return splitPropertyName.join('-');
-}
-
-function generateStyles(property, valuesWithDefaults) {
-  var styles = {};
-  for (var i = 0; i < valuesWithDefaults.length; i += 1) {
-    if (valuesWithDefaults[i]) {
-      styles[generateProperty(property, positionMap[i])] = valuesWithDefaults[i];
-    }
-  }
-  return styles;
-}
-
-/**
- * The directional property helper enables shorthand for direction based properties. It accepts a property and up to four values that map to top, right, bottom, and left, respectively. You can optionally pass an empty string to get only the directional values as properties. You can optionally pass a null argument for a directional value to ignore it.
- * @example
- * // Styles as object usage
- * const styles = {
- *   ...directionalProperty('padding', '12px', '24px', '36px', '48px')
- * }
- *
- * // styled-components usage
- * const div = styled.div`
- *   ${directionalProperty('padding', '12px', '24px', '36px', '48px')}
- * `
- *
- * // CSS as JS Output
- *
- * div {
- *   'padding-top': '12px',
- *   'padding-right': '24px',
- *   'padding-bottom': '36px',
- *   'padding-left': '48px'
- * }
- */
-
-function directionalProperty(property) {
-  for (var _len = arguments.length, values = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    values[_key - 1] = arguments[_key];
-  }
-
-  // $FlowIgnoreNextLine doesn't understand destructuring with chained defaults.
-  var firstValue = values[0],
-      _values$ = values[1],
-      secondValue = _values$ === undefined ? firstValue : _values$,
-      _values$2 = values[2],
-      thirdValue = _values$2 === undefined ? firstValue : _values$2,
-      _values$3 = values[3],
-      fourthValue = _values$3 === undefined ? secondValue : _values$3;
-
-  var valuesWithDefaults = [firstValue, secondValue, thirdValue, fourthValue];
-  return generateStyles(property, valuesWithDefaults);
-}
-
-//      
-
-/**
- * Check if a string ends with something
- * @private
- */
-var endsWith = function (string, suffix) {
-  return string.substr(-suffix.length) === suffix;
-};
-
-//      
-
-/**
- * Strip the unit from a given CSS value, returning just the number. (or the original value if an invalid string was passed)
- *
- * @example
- * // Styles as object usage
- * const styles = {
- *   '--dimension': stripUnit(100px)
- * }
- *
- * // styled-components usage
- * const div = styled.div`
- *   --dimension: ${stripUnit(100px)}
- * `
- *
- * // CSS in JS Output
- *
- * element {
- *   '--dimension': 100
- * }
- */
-
-function stripUnit(value) {
-  var unitlessValue = parseFloat(value);
-  if (isNaN(unitlessValue)) return value;
-  return unitlessValue;
-}
-
-//      
-
-/**
- * Factory function that creates pixel-to-x converters
- * @private
- */
-var pxtoFactory$1 = function pxtoFactory$1(to) {
-  return function (pxval) {
-    var base = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '16px';
-
-    var newPxval = pxval;
-    var newBase = base;
-    if (typeof pxval === 'string') {
-      if (!endsWith(pxval, 'px')) {
-        throw new Error('Expected a string ending in "px" or a number passed as the first argument to ' + to + '(), got "' + pxval + '" instead.');
-      }
-      newPxval = stripUnit(pxval);
-    }
-
-    if (typeof base === 'string') {
-      if (!endsWith(base, 'px')) {
-        throw new Error('Expected a string ending in "px" or a number passed as the second argument to ' + to + '(), got "' + base + '" instead.');
-      }
-      newBase = stripUnit(base);
-    }
-
-    if (typeof newPxval === 'string') {
-      throw new Error('Passed invalid pixel value ("' + pxval + '") to ' + to + '(), please pass a value like "12px" or 12.');
-    }
-
-    if (typeof newBase === 'string') {
-      throw new Error('Passed invalid base value ("' + base + '") to ' + to + '(), please pass a value like "12px" or 12.');
-    }
-
-    return '' + newPxval / newBase + to;
-  };
-};
-
-//      
-
-/**
- * Convert pixel value to ems. The default base value is 16px, but can be changed by passing a
- * second argument to the function.
- * @function
- * @param {string|number} pxval
- * @param {string|number} [base='16px']
- * @example
- * // Styles as object usage
- * const styles = {
- *   'height': em('16px')
- * }
- *
- * // styled-components usage
- * const div = styled.div`
- *   height: ${em('16px')}
- * `
- *
- * // CSS in JS Output
- *
- * element {
- *   'height': '1em'
- * }
- */
-
-var em = pxtoFactory$1('em');
-
-//      
-
-var ratioNames = {
-  minorSecond: 1.067,
-  majorSecond: 1.125,
-  minorThird: 1.2,
-  majorThird: 1.25,
-  perfectFourth: 1.333,
-  augFourth: 1.414,
-  perfectFifth: 1.5,
-  minorSixth: 1.6,
-  goldenSection: 1.618,
-  majorSixth: 1.667,
-  minorSeventh: 1.778,
-  majorSeventh: 1.875,
-  octave: 2,
-  majorTenth: 2.5,
-  majorEleventh: 2.667,
-  majorTwelfth: 3,
-  doubleOctave: 4
-};
-
-/** */
-
-/**
- * Establish consistent measurements and spacial relationships throughout your projects by incrementing up or down a defined scale. We provide a list of commonly used scales as pre-defined variables, see below.
- * @example
- * // Styles as object usage
- * const styles = {
- *    // Increment two steps up the default scale
- *   'font-size': modularScale(2)
- * }
- *
- * // styled-components usage
- * const div = styled.div`
- *    // Increment two steps up the default scale
- *   font-size: ${modularScale(2)}
- * `
- *
- * // CSS in JS Output
- *
- * element {
- *   'font-size': '1.77689em'
- * }
- */
-function modularScale(steps) {
-  var base = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '1em';
-  var ratio = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'perfectFourth';
-
-  if (!steps) {
-    throw new Error('Please provide a number of steps to the modularScale helper.');
-  }
-  if (typeof ratio === 'string' && !ratioNames[ratio]) {
-    throw new Error('Please pass a number or one of the predefined scales to the modularScale helper as the ratio.');
-  }
-
-  var realBase = typeof base === 'string' ? stripUnit(base) : base;
-  var realRatio = typeof ratio === 'string' ? ratioNames[ratio] : ratio;
-
-  if (typeof realBase === 'string') {
-    throw new Error('Invalid value passed as base to modularScale, expected number or em string but got "' + base + '"');
-  }
-
-  return realBase * realRatio * steps + 'em';
-}
-
-//      
-
-/**
- * Convert pixel value to rems. The default base value is 16px, but can be changed by passing a
- * second argument to the function.
- * @function
- * @param {string|number} pxval
- * @param {string|number} [base='16px']
- * @example
- * // Styles as object usage
- * const styles = {
- *   'height': rem('16px')
- * }
- *
- * // styled-components usage
- * const div = styled.div`
- *   height: ${rem('16px')}
- * `
- *
- * // CSS in JS Output
- *
- * element {
- *   'height': '1rem'
- * }
- */
-var rem = pxtoFactory$1('rem');
-
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
 } : function (obj) {
@@ -391,6 +132,353 @@ var taggedTemplateLiteral = function (strings, raw) {
   }));
 };
 
+
+
+
+
+
+
+
+
+var toConsumableArray = function (arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
+
+    return arr2;
+  } else {
+    return Array.from(arr);
+  }
+};
+
+//      
+var errorStyles = 'padding: 2px; font-weight: bold; background: red; color: black';
+var warningStyles = 'padding: 2px; font-weight: bold; background: gold; color: black';
+
+function formatMessage(type, messageBody, moduleName, modulePath) {
+  var header = '%c -- ' + type + ' --------------------------------------------------- ' + modulePath + ' -- ';
+
+  var body = '%c\n\n\n' + moduleName + ' %c' + messageBody + '\n\n  ';
+
+  var info = '%c\nPlease see the documentation at %chttps://www.polished.js.org/#' + moduleName + ' %cfor more information.\n\n  ';
+
+  return '' + header + body + info;
+}
+
+function generateHeaderStyles(type) {
+  return type === 'error' ? errorStyles : warningStyles;
+}
+
+/**
+ * Handles the formatting of warnings and errors generated by modules.
+ * @private
+ */
+
+function messageHandler(type, messageBody, moduleName, modulePath) {
+  var message = formatMessage(type, messageBody, moduleName, modulePath);
+  var headerStyles = generateHeaderStyles(type);
+  // eslint-disable-next-line no-console
+  console.log(message, headerStyles, 'color: black', 'color: slategray; font-weight: bold', 'color: slategray', 'color: blue', 'color: slategray');
+}
+
+function getCaller() {
+  var file = void 0;
+  var frame = void 0;
+
+  var pst = Error.prepareStackTrace;
+  Error.prepareStackTrace = function (_, stack) {
+    Error.prepareStackTrace = pst;
+    return stack;
+  };
+
+  var stack = new Error().stack;
+  stack = stack.slice(2);
+
+  do {
+    frame = stack.shift();
+    file = frame && frame.getFileName();
+  } while (stack.length && file === 'module.js');
+
+  return file;
+}
+
+function getModuleInfo(callerModule) {
+  var moduleName = callerModule.match(/([^/]+)(?=\.\w+$)/)[0];
+  var callerArray = callerModule.split('/');
+  var modulePath = callerArray[callerArray.length - 2] + '/' + callerArray[callerArray.length - 1];
+  return [moduleName, modulePath];
+}
+
+function error$1(messageBody) {
+  messageHandler.apply(undefined, ['error', messageBody].concat(toConsumableArray(getModuleInfo(getCaller()))));
+}
+
+function warning(messageBody) {
+  messageHandler.apply(undefined, ['warning', messageBody].concat(toConsumableArray(getModuleInfo(getCaller()))));
+}
+
+//      
+var positionMap = ['top', 'right', 'bottom', 'left'];
+
+function generateProperty(property, position) {
+  if (!property) return position;
+  var splitPropertyName = property.split('-');
+  splitPropertyName.splice(1, 0, position);
+  return splitPropertyName.join('-');
+}
+
+function generateStyles(property, valuesWithDefaults) {
+  var styles = {};
+  for (var i = 0; i < valuesWithDefaults.length; i += 1) {
+    if (valuesWithDefaults[i]) {
+      styles[generateProperty(property, positionMap[i])] = valuesWithDefaults[i];
+    }
+  }
+  return styles;
+}
+
+/**
+ * The directional property helper enables shorthand for direction based properties. It accepts a property and up to four values that map to top, right, bottom, and left, respectively. You can optionally pass an empty string to get only the directional values as properties. You can optionally pass a null argument for a directional value to ignore it.
+ * @example
+ * // Styles as object usage
+ * const styles = {
+ *   ...directionalProperty('padding', '12px', '24px', '36px', '48px')
+ * }
+ *
+ * // styled-components usage
+ * const div = styled.div`
+ *   ${directionalProperty('padding', '12px', '24px', '36px', '48px')}
+ * `
+ *
+ * // CSS as JS Output
+ *
+ * div {
+ *   'padding-top': '12px',
+ *   'padding-right': '24px',
+ *   'padding-bottom': '36px',
+ *   'padding-left': '48px'
+ * }
+ */
+
+function directionalProperty(property) {
+  for (var _len = arguments.length, values = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    values[_key - 1] = arguments[_key];
+  }
+
+  /* istanbul ignore next */
+  {
+    if (!property) error$1('expects a property(string) as its firt parameter. However, you did not provide one.');
+    if (!values) error$1('expects at least one value(string) as its tail. However, you did not provide one.');
+    if (values.length > 5) warning('expects no more than 4 values(string) as its tail. However, you provided ' + values.length + ' instead, ' + (values.length - 4) + ' of which were ignored.');
+  }
+  // $FlowIgnoreNextLine doesn't understand destructuring with chained defaults.
+  var firstValue = values[0],
+      _values$ = values[1],
+      secondValue = _values$ === undefined ? firstValue : _values$,
+      _values$2 = values[2],
+      thirdValue = _values$2 === undefined ? firstValue : _values$2,
+      _values$3 = values[3],
+      fourthValue = _values$3 === undefined ? secondValue : _values$3;
+
+  var valuesWithDefaults = [firstValue, secondValue, thirdValue, fourthValue];
+  return generateStyles(property, valuesWithDefaults);
+}
+
+//      
+
+/**
+ * Check if a string ends with something
+ * @private
+ */
+var endsWith = function (string, suffix) {
+  return string.substr(-suffix.length) === suffix;
+};
+
+//      
+
+/**
+ * Strip the unit from a given CSS value, returning just the number. (or the original value if an invalid string was passed)
+ *
+ * @example
+ * // Styles as object usage
+ * const styles = {
+ *   '--dimension': stripUnit(100px)
+ * }
+ *
+ * // styled-components usage
+ * const div = styled.div`
+ *   --dimension: ${stripUnit(100px)}
+ * `
+ *
+ * // CSS in JS Output
+ *
+ * element {
+ *   '--dimension': 100
+ * }
+ */
+
+function stripUnit(value) {
+  var unitlessValue = parseFloat(value);
+  if (isNaN(unitlessValue)) return value;
+  return unitlessValue;
+}
+
+//      
+
+/**
+ * Factory function that creates pixel-to-x converters
+ * @private
+ */
+var pxtoFactory$1 = function pxtoFactory$1(to) {
+  return function (pxval) {
+    var base = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '16px';
+
+    var newPxval = pxval;
+    var newBase = base;
+    if (typeof pxval === 'string') {
+      if (!endsWith(pxval, 'px')) {
+        throw new Error('Expected a string ending in "px" or a number passed as the first argument to ' + to + '(), got "' + pxval + '" instead.');
+      }
+      newPxval = stripUnit(pxval);
+    }
+
+    if (typeof base === 'string') {
+      if (!endsWith(base, 'px')) {
+        throw new Error('Expected a string ending in "px" or a number passed as the second argument to ' + to + '(), got "' + base + '" instead.');
+      }
+      newBase = stripUnit(base);
+    }
+
+    if (typeof newPxval === 'string') {
+      throw new Error('Passed invalid pixel value ("' + pxval + '") to ' + to + '(), please pass a value like "12px" or 12.');
+    }
+
+    if (typeof newBase === 'string') {
+      throw new Error('Passed invalid base value ("' + base + '") to ' + to + '(), please pass a value like "12px" or 12.');
+    }
+
+    return '' + newPxval / newBase + to;
+  };
+};
+
+//      
+
+/**
+ * Convert pixel value to ems. The default base value is 16px, but can be changed by passing a
+ * second argument to the function.
+ * @function
+ * @param {string|number} pxval
+ * @param {string|number} [base='16px']
+ * @example
+ * // Styles as object usage
+ * const styles = {
+ *   'height': em('16px')
+ * }
+ *
+ * // styled-components usage
+ * const div = styled.div`
+ *   height: ${em('16px')}
+ * `
+ *
+ * // CSS in JS Output
+ *
+ * element {
+ *   'height': '1em'
+ * }
+ */
+
+var em = pxtoFactory$1('em');
+
+//      
+var ratioNames = {
+  minorSecond: 1.067,
+  majorSecond: 1.125,
+  minorThird: 1.2,
+  majorThird: 1.25,
+  perfectFourth: 1.333,
+  augFourth: 1.414,
+  perfectFifth: 1.5,
+  minorSixth: 1.6,
+  goldenSection: 1.618,
+  majorSixth: 1.667,
+  minorSeventh: 1.778,
+  majorSeventh: 1.875,
+  octave: 2,
+  majorTenth: 2.5,
+  majorEleventh: 2.667,
+  majorTwelfth: 3,
+  doubleOctave: 4
+};
+
+/** */
+
+/**
+ * Establish consistent measurements and spacial relationships throughout your projects by incrementing up or down a defined scale. We provide a list of commonly used scales as pre-defined variables, see below.
+ * @example
+ * // Styles as object usage
+ * const styles = {
+ *    // Increment two steps up the default scale
+ *   'font-size': modularScale(2)
+ * }
+ *
+ * // styled-components usage
+ * const div = styled.div`
+ *    // Increment two steps up the default scale
+ *   font-size: ${modularScale(2)}
+ * `
+ *
+ * // CSS in JS Output
+ *
+ * element {
+ *   'font-size': '1.77689em'
+ * }
+ */
+function modularScale(steps) {
+  var base = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '1em';
+  var ratio = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'perfectFourth';
+
+  {
+    if (!steps) error$1('expects the number of steps as its first parameter. However, you did not pass one.');
+    if (typeof steps !== 'number') error$1('expects the number of steps as a number. However, you passed ' + steps + '(' + (typeof steps === 'undefined' ? 'undefined' : _typeof(steps)) + ') instead.');
+    if (typeof ratio === 'string' && !ratioNames[ratio]) error$1('expects a number or a predefined scale as its second parameter. However, you passed ' + ratio + '(' + (typeof ratio === 'undefined' ? 'undefined' : _typeof(ratio)) + ') instead.');
+  }
+
+  var realBase = typeof base === 'string' ? stripUnit(base) : base;
+  var realRatio = typeof ratio === 'string' ? ratioNames[ratio] : ratio;
+
+  {
+    if (typeof realBase === 'string') error$1('expects a number or em string as its second parameter when not using a predefined scale. However, you passed ' + realBase + ' instead.');
+  }
+
+  return realBase * realRatio * steps + 'em';
+}
+
+//      
+
+/**
+ * Convert pixel value to rems. The default base value is 16px, but can be changed by passing a
+ * second argument to the function.
+ * @function
+ * @param {string|number} pxval
+ * @param {string|number} [base='16px']
+ * @example
+ * // Styles as object usage
+ * const styles = {
+ *   'height': rem('16px')
+ * }
+ *
+ * // styled-components usage
+ * const div = styled.div`
+ *   height: ${rem('16px')}
+ * `
+ *
+ * // CSS in JS Output
+ *
+ * element {
+ *   'height': '1rem'
+ * }
+ */
+var rem = pxtoFactory$1('rem');
+
 //      
 
 /**
@@ -435,13 +523,13 @@ function clearFix() {
  * @example
  * // Styles as object usage
  * const styles = {
- *   ...ellipsis(250px)
+ *   ...ellipsis('250px')
  * }
  *
  * // styled-components usage
  * const div = styled.div`
- *   ${ellipsis(250px)}
- *
+ *   ${ellipsis('250px')}
+ * `
  *
  * // CSS as JS Output
  *
@@ -558,7 +646,7 @@ function fontFace(_ref) {
 //      
 
 /**
- * CSS to hide text to show a background image in a SEO-Friendly.
+ * CSS to hide text to show a background image in a SEO-friendly way.
  *
  * @example
  * // Styles as object usage
@@ -1069,7 +1157,7 @@ function timingFunctions(timingFunction) {
 //      
 
 /**
- * Provides an easy way to change the `word-wrap` property
+ * Provides an easy way to change the `word-wrap` property.
  *
  * @example
  * // Styles as object usage
@@ -1080,7 +1168,7 @@ function timingFunctions(timingFunction) {
  * // styled-components usage
  * const div = styled.div`
  *   ${wordWrap('break-all')}
- *
+ * `
  *
  * // CSS as JS Output
  *
@@ -1901,23 +1989,23 @@ var mix$1 = curry(mix);
  * // Styles as object usage
  * const styles = {
  *   background: opacify(0.1, '#fff');
- *   background: opacify(0.2, 'hsl(0, 0%, 100%)'),
- *   background: opacify(0.5, 'rgba(255, 0, 0, 0.8)'),
+ *   background: opacify(0.2, 'hsla(0, 0%, 100%, 0.5)'),
+ *   background: opacify(0.5, 'rgba(255, 0, 0, 0.2)'),
  * }
  *
  * // styled-components usage
  * const div = styled.div`
  *   background: ${opacify(0.1, '#fff')};
- *   background: ${opacify(0.2, 'hsl(0, 0%, 100%)')},
- *   background: ${opacify(0.5, 'rgba(255, 0, 0, 0.8)')},
+ *   background: ${opacify(0.2, 'hsla(0, 0%, 100%, 0.5)')},
+ *   background: ${opacify(0.5, 'rgba(255, 0, 0, 0.2)')},
  * `
  *
  * // CSS in JS Output
  *
  * element {
- *   background: "rgba(255,255,255,0.9)";
- *   background: "rgba(255,255,255,0.8)";
- *   background: "rgba(255,0,0,0.3)";
+ *   background: "#fff";
+ *   background: "rgba(255,255,255,0.7)";
+ *   background: "rgba(255,0,0,0.7)";
  * }
  */
 function opacify(amount, color) {
